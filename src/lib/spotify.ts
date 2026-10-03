@@ -87,7 +87,7 @@ export async function getLikedTracks(cid: string, onProgress: (n: number, total:
     for (const it of page.items ?? []) {
       const t = it.track;
       if (!t || !t.id || t.is_local || t.type !== "track") { skipped++; continue; }   // deleted / local / unavailable
-      if (!seen.has(t.id)) seen.set(t.id, { id: t.id, uri: t.uri, name: t.name, artist: t.artists?.[0]?.name ?? "", album: t.album?.name ?? "", addedAt: it.added_at ?? "", released: t.album?.release_date ?? "" });
+      if (!seen.has(t.id)) seen.set(t.id, { id: t.id, uri: t.uri, name: t.name, artist: t.artists?.[0]?.name ?? "", album: t.album?.name ?? "", addedAt: it.added_at ?? "", released: t.album?.release_date ?? "", albumId: t.album?.id ?? "", trackNo: (t.disc_number ?? 1) * 1000 + (t.track_number ?? 0) });
     }
     onProgress(seen.size + skipped, page.total ?? 0);
     url = page.next ? page.next.replace(API, "") : null;

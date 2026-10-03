@@ -1,7 +1,7 @@
 # VR Spotify Organizer
 
 Ranks your Spotify **Liked Songs** by Last.fm global listening counts and turns them into private playlists.
-You can name every playlist yourself, group by rank, popularity tier, release year, year added, or genre tag, and give each playlist a generated cover.
+You can name every playlist yourself, group by rank, popularity tier, album/movie, release year or decade, or year or decade added, filter by artist, album and decade, and give each playlist a generated cover.
 
 **How it works:** it is a static website. Everything runs in your browser. There is no server and no database.
 Spotify login uses PKCE (no client secret), and your keys and songs stay in your browser.

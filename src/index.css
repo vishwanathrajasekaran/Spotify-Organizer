@@ -77,3 +77,5 @@ select { cursor:pointer; }
 .poplist { max-height:240px; overflow:auto; margin:12px 0; display:grid; gap:8px; }
 .nameinput { min-height:44px; max-width:340px; font-weight:800; margin-bottom:4px; }
 img.thumb { width:64px; height:64px; border-radius:18px; box-shadow: 6px 6px 12px var(--sh-dark), -4px -4px 10px var(--sh-light); flex:none; }
+
+.seg.dense button { padding:8px 5px; font-size:.84rem; }

@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/lastfm/2.0", "destination": "https://ws.audioscrobbler.com/2.0/" },
+    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+  ]
+}

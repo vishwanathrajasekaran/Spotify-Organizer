@@ -99,7 +99,7 @@ function Setup({ onSaved }: { onSaved: (c: Cfg) => void }) {
     saveCfg(c, remember); onSaved(c);
   };
   return <main>
-    <h1>VR Spotify Organizer</h1>
+    <h1>Spotify Organizer</h1>
     <p className="dim">Organize your Spotify Liked Songs by how many times the world has listened to them.</p>
     <div className="card clay" style={{ marginTop: 28 }}>
       <h2 style={{ marginTop: 6 }}>Set up your own keys</h2>
@@ -190,7 +190,7 @@ export default function App() {
   if (booting) return <main><p className="dim">Loading…</p></main>;
   if (!cfg) return <Setup onSaved={(c) => { setCfg(c); setError(""); }} />;
   if (!me) return <main>
-    <h1>VR Spotify Organizer</h1>
+    <h1>Spotify Organizer</h1>
     <p className="dim">Organize your Spotify Liked Songs by how many times the world has listened to them.</p>
     {error && <p className="err">{error}</p>}
     <div className="row" style={{ marginTop: 28 }}><button className="btn mint" onClick={connect}>Connect Spotify</button><button className="btn small" onClick={reset}>Change keys</button></div>
@@ -203,7 +203,7 @@ export default function App() {
   const stepBadge = (s: Step) => s.state === "done" ? (s.created ? "✓ created" : "✓ updated") : s.state === "working" ? "…" : s.state === "error" ? "✗" : "";
 
   return <main>
-    <div className="row between"><div><h1>VR Spotify Organizer</h1><p className="dim" style={{ margin: 0 }}>Connected as {me.name}</p></div>
+    <div className="row between"><div><h1>Spotify Organizer</h1><p className="dim" style={{ margin: 0 }}>Connected as {me.name}</p></div>
       <button className="btn small" onClick={reset}>Disconnect and clear keys</button></div>
     {error && <p className="err">{error}</p>}
 

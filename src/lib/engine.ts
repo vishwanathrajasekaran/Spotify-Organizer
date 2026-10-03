@@ -54,11 +54,14 @@ export function insights(lib: Track[]) {
   const buckets: [string, number, number][] = [["Under 1K", 0, 1e3], ["1K to 10K", 1e3, 1e4], ["10K to 100K", 1e4, 1e5], ["100K to 1M", 1e5, 1e6], ["1M to 10M", 1e6, 1e7], ["10M+", 1e7, Infinity]];
   const top = (xs: string[]) => Object.entries(xs.reduce<Record<string, number>>((m, x) => ((m[x] = (m[x] ?? 0) + 1), m), {}))
     .sort((a, b) => b[1] - a[1]).slice(0, 8).map(([label, count]) => ({ label, count }));
+  const dec = new Map<string, number>();
+  lib.forEach((t) => { const y = parseInt(t.released.slice(0, 4), 10); if (Number.isFinite(y)) { const d = `${Math.floor(y / 10) * 10}s`; dec.set(d, (dec.get(d) ?? 0) + 1); } });
+  const decades = [...dec.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([label, count]) => ({ label, count }));
   const mini = (a: Track[]) => a.slice(0, 5).map((t) => ({ name: t.name, artist: t.artist, playcount: t.playcount }));
   return {
     score: avgLog(max), abs: avgLog(5e7), max, median: pcs[Math.floor(pcs.length / 2)].playcount!,
     dist: buckets.map(([label, lo, hi]) => ({ label, count: pcs.filter((t) => t.playcount! >= lo && t.playcount! < hi).length })),
-    artists: top(lib.map((t) => t.artist)), tags: top(lib.flatMap((t) => t.tags.slice(0, 1))),
+    artists: top(lib.map((t) => t.artist)), albums: top(lib.map((t) => t.album).filter(Boolean)), decades,
     mainstream: mini(pcs), obscure: mini([...pcs].reverse()),
   };
 }

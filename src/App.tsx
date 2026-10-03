@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { buildPlan, cleanOptions, type Group, type Options as Opts, type Track } from "./lib/ranking";
+import { addedDecade, buildPlan, cleanOptions, releaseDecade, type Group, type Options as Opts, type Track } from "./lib/ranking";
 import { clearAll, getCfg, load, save, saveCfg, type Cfg } from "./lib/storage";
 import { clearTokens, finishLogin, getMe, hasTokens, redirectUri, startLogin } from "./lib/spotify";
 import { searchTracks, validateKey } from "./lib/lastfm";
@@ -12,15 +12,15 @@ const fmt = (n: number | null) => (n === null ? "—" : n.toLocaleString());
 const HEX32 = /^[a-f0-9]{32}$/i;
 
 function exportCsv(groups: Group[], unranked: Track[]) {
-  const rows: string[][] = [["playlist", "rank", "song", "artist", "album", "year", "added", "playcount", "listeners", "tags"]];
-  const add = (pl: string, t: T) => rows.push([pl, String(t.rank ?? ""), t.name, t.artist, t.album, t.released.slice(0, 4), t.addedAt.slice(0, 10), String(t.playcount ?? ""), String(t.listeners ?? ""), t.tags.join("; ")]);
+  const rows: string[][] = [["playlist", "rank", "song", "artist", "album", "year", "added", "playcount", "listeners"]];
+  const add = (pl: string, t: T) => rows.push([pl, String(t.rank ?? ""), t.name, t.artist, t.album, t.released.slice(0, 4), t.addedAt.slice(0, 10), String(t.playcount ?? ""), String(t.listeners ?? "")]);
   groups.forEach((g) => g.tracks.forEach((t) => add(g.name, t))); unranked.forEach((t) => add("Unranked", t));
   const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = "ranked-songs.csv"; a.click(); URL.revokeObjectURL(a.href);
 }
 
-function Seg<V extends string | number>({ value, options, onChange, label }: { value: V; options: [V, string][]; onChange: (v: V) => void; label: string }) {
-  return <div className="seg" role="group" aria-label={label}>{options.map(([v, l]) => <button type="button" key={String(v)} className={v === value ? "on" : ""} aria-pressed={v === value} onClick={() => onChange(v)}>{l}</button>)}</div>;
+function Seg<V extends string | number>({ value, options, onChange, label, dense }: { value: V; options: [V, string][]; onChange: (v: V) => void; label: string; dense?: boolean }) {
+  return <div className={dense ? "seg dense" : "seg"} role="group" aria-label={label}>{options.map(([v, l]) => <button type="button" key={String(v)} className={v === value ? "on" : ""} aria-pressed={v === value} onClick={() => onChange(v)}>{l}</button>)}</div>;
 }
 
 type SortKey = "rank" | "name" | "artist" | "released" | "addedAt" | "playcount" | "listeners";
@@ -28,12 +28,12 @@ function SongTable({ tracks, q }: { tracks: T[]; q: string }) {
   const [key, setKey] = useState<SortKey>("rank"); const [asc, setAsc] = useState(true);
   const needle = q.trim().toLowerCase();
   const val = (t: T): any => (key === "name" ? t.name.toLowerCase() : key === "artist" ? t.artist.toLowerCase() : key === "addedAt" ? t.addedAt : key === "released" ? t.released : (t[key] ?? -1));
-  const rows = tracks.filter((t) => !needle || `${t.name} ${t.artist} ${t.album} ${t.tags.join(" ")}`.toLowerCase().includes(needle))
+  const rows = tracks.filter((t) => !needle || `${t.name} ${t.artist} ${t.album}`.toLowerCase().includes(needle))
     .sort((a, b) => (val(a) < val(b) ? -1 : val(a) > val(b) ? 1 : 0) * (asc ? 1 : -1));
   const th = (k: SortKey, l: string, n = false) => <th className={n ? "n" : ""} aria-sort={key === k ? (asc ? "ascending" : "descending") : "none"}>
     <button onClick={() => { if (key === k) setAsc(!asc); else { setKey(k); setAsc(true); } }}>{l}{key === k ? (asc ? " ▴" : " ▾") : ""}</button></th>;
   return <div style={{ overflowX: "auto" }}><table><thead><tr>{th("rank", "Rank", true)}{th("name", "Song")}{th("artist", "Artist")}{th("released", "Year")}{th("addedAt", "Added")}{th("playcount", "Plays", true)}{th("listeners", "Listeners", true)}</tr></thead>
-    <tbody>{rows.map((t) => <tr key={t.id}><td className="n">{t.rank ?? "—"}</td><td>{t.name}</td><td>{t.artist}</td><td>{t.released.slice(0, 4) || "—"}</td><td>{t.addedAt.slice(0, 10) || "—"}</td><td className="n">{fmt(t.playcount)}</td><td className="n">{fmt(t.listeners)}</td></tr>)}</tbody></table>
+    <tbody>{rows.map((t) => <tr key={t.id}><td className="n">{t.rank || "—"}</td><td>{t.name}</td><td>{t.artist}</td><td>{t.released.slice(0, 4) || "—"}</td><td>{t.addedAt.slice(0, 10) || "—"}</td><td className="n">{fmt(t.playcount)}</td><td className="n">{fmt(t.listeners)}</td></tr>)}</tbody></table>
     {!rows.length && <p className="dim">No songs match your search.</p>}</div>;
 }
 
@@ -64,21 +64,23 @@ function Insights({ ins }: { ins: Ins }) {
     </div>
     <p className="dim">The main score compares each song's plays (log scale) with your most popular song, which has {fmt(ins.max)} plays. 100 means every song is as popular as your top one. The 50M score uses a fixed 50 million plays as the top, so it is easier to compare with other libraries.</p>
     <h2>How popular are your songs?</h2><div className="card clay"><Bars items={ins.dist} /></div>
+    <h2>Songs by release decade</h2><div className="card clay"><Bars items={ins.decades} /></div>
     <div className="opts"><div><h2 style={{ marginTop: 0 }}>Top artists in your library</h2><div className="card clay"><Bars items={ins.artists} /></div></div>
-      {ins.tags.length > 0 && <div><h2 style={{ marginTop: 0 }}>Top genres</h2><div className="card clay"><Bars items={ins.tags} /></div></div>}</div>
+      <div><h2 style={{ marginTop: 0 }}>Top albums / movies</h2><div className="card clay"><Bars items={ins.albums} /></div></div></div>
     <div className="opts">{list("Most mainstream", ins.mainstream)}{list("Most obscure", ins.obscure)}</div>
   </>;
 }
 
-function ArtistPicker({ list, value, onChange }: { list: { name: string; count: number }[]; value: string[]; onChange: (v: string[]) => void }) {
+interface Pick { id: string; label: string; count: number }
+function MultiPick({ label, allLabel, items, value, onChange }: { label: string; allLabel: string; items: Pick[]; value: string[]; onChange: (v: string[]) => void }) {
   const [open, setOpen] = useState(false); const [q, setQ] = useState("");
-  const shown = list.filter((a) => a.name.toLowerCase().includes(q.toLowerCase())).slice(0, 200);
-  const toggle = (n: string) => onChange(value.includes(n) ? value.filter((x) => x !== n) : [...value, n]);
-  return <div className="fld">Only these artists<div style={{ position: "relative" }}>
-    <button type="button" className="btn pick" onClick={() => setOpen(!open)} aria-expanded={open}>{value.length ? `${value.length} selected` : "All artists"} ▾</button>
+  const shown = items.filter((a) => a.label.toLowerCase().includes(q.toLowerCase())).slice(0, 200);
+  const toggle = (id: string) => onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value, id]);
+  return <div className="fld">{label}<div style={{ position: "relative" }}>
+    <button type="button" className="btn pick" onClick={() => setOpen(!open)} aria-expanded={open}>{value.length ? `${value.length} selected` : allLabel} ▾</button>
     {open && <div className="pop clay">
-      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search artists" autoFocus />
-      <div className="poplist">{shown.map((a) => <label className="check" key={a.name}><input type="checkbox" checked={value.includes(a.name)} onChange={() => toggle(a.name)} />{a.name} <span className="dim">({a.count})</span></label>)}</div>
+      {items.length > 8 && <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" autoFocus />}
+      <div className="poplist">{shown.map((a) => <label className="check" key={a.id}><input type="checkbox" checked={value.includes(a.id)} onChange={() => toggle(a.id)} />{a.label} <span className="dim">({a.count})</span></label>)}</div>
       <div className="row"><button type="button" className="btn small" onClick={() => onChange([])}>Clear</button><button type="button" className="btn mint small" onClick={() => setOpen(false)}>Done</button></div>
     </div>}
   </div></div>;
@@ -163,9 +165,20 @@ export default function App() {
   const plan = useMemo(() => (library ? buildPlan(library, options) : null), [library, options]);
   const ins = useMemo(() => (library ? makeInsights(library) : null), [library]);
   const diff = useMemo(() => (plan && me ? computeDiff(me.id, plan.groups) : null), [plan, me, snap]);
-  const artistList = useMemo(() => {
-    const m = new Map<string, number>(); (library ?? []).forEach((t) => m.set(t.artist, (m.get(t.artist) ?? 0) + 1));
-    return [...m].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  const pick = useMemo(() => {
+    const count = (keyOf: (t: Track) => string, labelOf: (t: Track) => string) => {
+      const m = new Map<string, Pick>();
+      (library ?? []).forEach((t) => { const id = keyOf(t); if (!id) return; const e = m.get(id); if (e) e.count++; else m.set(id, { id, label: labelOf(t), count: 1 }); });
+      return [...m.values()];
+    };
+    const bySize = (a: Pick, b: Pick) => b.count - a.count || a.label.localeCompare(b.label);
+    const byDecade = (a: Pick, b: Pick) => Number(b.id) - Number(a.id);
+    return {
+      artists: count((t) => t.artist, (t) => t.artist).sort(bySize),
+      albums: count((t) => t.albumId, (t) => `${t.album} · ${t.artist}`).sort(bySize),
+      rel: count(releaseDecade, (t) => `${releaseDecade(t)}s`).sort(byDecade),
+      add: count(addedDecade, (t) => `${addedDecade(t)}s`).sort(byDecade),
+    };
   }, [library]);
   const names = plan ? plan.groups.map((g) => g.name).join("|") : "";
   const covers = useMemo(() => (cover && plan ? Object.fromEntries(plan.groups.map((g) => [g.name, makeCover(g.name)])) : {}), [cover, names, fontTick]);
@@ -225,14 +238,17 @@ export default function App() {
       <div className="card clay"><div className="opts">
         <label className="fld">Rank by<Seg label="Rank by" value={options.metric} onChange={(v) => set("metric", v)} options={[["playcount", "Plays"], ["listeners", "Listeners"]]} /></label>
         <label className="fld">Group songs by<select value={options.mode} onChange={(e) => set("mode", e.target.value as Opts["mode"])}>
-          <option value="ranges">Rank ranges (Top 50, 51-100, …)</option><option value="tiers">Popularity tiers</option><option value="released">Release year (song or movie)</option><option value="added">Year added to Liked Songs</option><option value="genre">Genre tag</option></select></label>
+          <option value="ranges">Rank ranges (Top 50, 51-100, …)</option><option value="tiers">Popularity tiers</option><option value="album">Album / movie (one playlist each)</option>
+          <option value="released">Release year</option><option value="releasedDecade">Release decade</option><option value="added">Year added to Liked Songs</option><option value="addedDecade">Decade added to Liked Songs</option></select></label>
         {options.mode === "ranges" && <>
           <label className="fld">Songs per playlist<Seg label="Songs per playlist" value={options.groupSize} onChange={(v) => set("groupSize", v)} options={[[25, "25"], [50, "50"], [100, "100"]]} /></label>
           <label className="fld">Playlist names<Seg label="Playlist names" value={options.naming} onChange={(v) => set("naming", v)} options={[["range", "Top 50"], ["numbered", "Batch 01"], ["tier", "Tier 1"]]} /></label></>}
-        <label className="fld">Order inside playlists<Seg label="Order" value={options.order} onChange={(v) => set("order", v)} options={[["rank", "Rank"], ["shuffle", "Shuffle"], ["newest", "Newest"], ["oldest", "Oldest"]]} /></label>
-        <ArtistPicker list={artistList} value={options.artists} onChange={(v) => set("artists", v)} />
-        <label className="fld">Only this album<input value={options.album} onChange={(e) => set("album", e.target.value)} placeholder="Any album" /></label>
-        <label className="fld">Only this genre tag<input value={options.tag} onChange={(e) => set("tag", e.target.value)} placeholder="e.g. indie" /></label>
+        {options.mode === "album" && <label className="fld">Minimum liked songs per album<Seg label="Minimum liked songs per album" value={options.minAlbumSongs} onChange={(v) => set("minAlbumSongs", v)} options={[[2, "2"], [3, "3"], [5, "5"], [10, "10"]]} /></label>}
+        <label className="fld">Order inside playlists<Seg dense label="Order" value={options.order} onChange={(v) => set("order", v)} options={[["rank", "Rank"], ["shuffle", "Shuffle"], ["newest", "Newest"], ["oldest", "Oldest"], ["album", "Album"]]} /></label>
+        <MultiPick label="Only these artists" allLabel="All artists" items={pick.artists} value={options.artists} onChange={(v) => set("artists", v)} />
+        <MultiPick label="Only these albums" allLabel="All albums" items={pick.albums} value={options.albums} onChange={(v) => set("albums", v)} />
+        <MultiPick label="Release decade" allLabel="All decades" items={pick.rel} value={options.releaseDecades} onChange={(v) => set("releaseDecades", v)} />
+        <MultiPick label="Decade added to Liked Songs" allLabel="All decades" items={pick.add} value={options.addedDecades} onChange={(v) => set("addedDecades", v)} />
       </div>{plan.filteredOut > 0 && <p className="dim">{plan.filteredOut} songs are hidden by your filters.</p>}</div>
 
       <div className="row" style={{ margin: "26px 0 6px" }}><Seg label="View" value={tab} onChange={setTab} options={[["playlists", "Playlists"], ["insights", "Insights"]]} /></div>
@@ -240,6 +256,7 @@ export default function App() {
       {tab === "playlists" && <>
         <h2>Playlist preview</h2>
         {skipped > 0 && <p className="dim">{skipped} deleted, local or unavailable items were skipped.</p>}
+        {plan.skippedAlbums > 0 && <p className="dim">{plan.skippedAlbums} albums have fewer than {options.minAlbumSongs} liked songs (or are beyond the first 50) and are not included.</p>}
         {diff && <p className="dim">Since your last update: {diff.moved} moved, {diff.added} new, {diff.removed} removed.</p>}
         <div className="row" style={{ alignItems: "end", marginBottom: 18 }}>
           <label className="fld" style={{ flex: 1, maxWidth: 360 }}>Search songs<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Song, artist, album or tag" /></label>
@@ -258,7 +275,7 @@ export default function App() {
             <button className="btn small" onClick={() => setOpen(open === g.key ? null : g.key)}>{open === g.key ? "Hide songs" : "View songs"}</button></div>
           {open === g.key && <SongTable tracks={g.tracks} q={q} />}</div>; })}
         {plan.unranked.length > 0 && <div className="card clay">
-          <div className="row between"><div><b>Unranked</b> <span className="dim">{plan.unranked.length} songs with no Last.fm match. Not added to any playlist.</span></div>
+          <div className="row between"><div><b>Unranked</b> <span className="dim">{plan.unranked.length} songs with no Last.fm match. {plan.unrankedIncluded ? "They are included in their album playlists." : "Not added to any playlist."}</span></div>
             <button className="btn small" onClick={() => setOpen(open === "_u" ? null : "_u")}>{open === "_u" ? "Hide songs" : "View songs"}</button></div>
           {open === "_u" && <ul className="plain" style={{ marginTop: 12 }}>{plan.unranked.filter((t) => !q || `${t.name} ${t.artist}`.toLowerCase().includes(q.toLowerCase())).map((t) => <li className="match" key={t.id}>
             <div className="row between"><span>{t.name} <span className="dim">by {t.artist}</span></span><button className="btn sky small" onClick={() => setFixing(fixing === t.id ? null : t.id)}>{fixing === t.id ? "Close" : "Fix match"}</button></div>

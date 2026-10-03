@@ -23,17 +23,17 @@ function Seg<V extends string | number>({ value, options, onChange, label, dense
   return <div className={dense ? "seg dense" : "seg"} role="group" aria-label={label}>{options.map(([v, l]) => <button type="button" key={String(v)} className={v === value ? "on" : ""} aria-pressed={v === value} onClick={() => onChange(v)}>{l}</button>)}</div>;
 }
 
-type SortKey = "rank" | "name" | "artist" | "released" | "addedAt" | "playcount" | "listeners";
+type SortKey = "rank" | "name" | "artist" | "album" | "released" | "addedAt" | "playcount" | "listeners";
 function SongTable({ tracks, q }: { tracks: T[]; q: string }) {
   const [key, setKey] = useState<SortKey>("rank"); const [asc, setAsc] = useState(true);
   const needle = q.trim().toLowerCase();
-  const val = (t: T): any => (key === "name" ? t.name.toLowerCase() : key === "artist" ? t.artist.toLowerCase() : key === "addedAt" ? t.addedAt : key === "released" ? t.released : (t[key] ?? -1));
+  const val = (t: T): any => (key === "name" ? t.name.toLowerCase() : key === "artist" ? t.artist.toLowerCase() : key === "album" ? t.album.toLowerCase() : key === "addedAt" ? t.addedAt : key === "released" ? t.released : (t[key] ?? -1));
   const rows = tracks.filter((t) => !needle || `${t.name} ${t.artist} ${t.album}`.toLowerCase().includes(needle))
     .sort((a, b) => (val(a) < val(b) ? -1 : val(a) > val(b) ? 1 : 0) * (asc ? 1 : -1));
   const th = (k: SortKey, l: string, n = false) => <th className={n ? "n" : ""} aria-sort={key === k ? (asc ? "ascending" : "descending") : "none"}>
     <button onClick={() => { if (key === k) setAsc(!asc); else { setKey(k); setAsc(true); } }}>{l}{key === k ? (asc ? " ▴" : " ▾") : ""}</button></th>;
-  return <div style={{ overflowX: "auto" }}><table><thead><tr>{th("rank", "Rank", true)}{th("name", "Song")}{th("artist", "Artist")}{th("released", "Year")}{th("addedAt", "Added")}{th("playcount", "Plays", true)}{th("listeners", "Listeners", true)}</tr></thead>
-    <tbody>{rows.map((t) => <tr key={t.id}><td className="n">{t.rank || "—"}</td><td>{t.name}</td><td>{t.artist}</td><td>{t.released.slice(0, 4) || "—"}</td><td>{t.addedAt.slice(0, 10) || "—"}</td><td className="n">{fmt(t.playcount)}</td><td className="n">{fmt(t.listeners)}</td></tr>)}</tbody></table>
+  return <div style={{ overflowX: "auto" }}><table><thead><tr>{th("rank", "Rank", true)}{th("name", "Song")}{th("artist", "Artist")}{th("album", "Album")}{th("released", "Year")}{th("addedAt", "Added")}{th("playcount", "Plays", true)}{th("listeners", "Listeners", true)}</tr></thead>
+    <tbody>{rows.map((t) => <tr key={t.id}><td className="n">{t.rank || "—"}</td><td>{t.name}</td><td>{t.artist}</td><td title={t.album}>{t.album || "—"}</td><td>{t.released.slice(0, 4) || "—"}</td><td>{t.addedAt.slice(0, 10) || "—"}</td><td className="n">{fmt(t.playcount)}</td><td className="n">{fmt(t.listeners)}</td></tr>)}</tbody></table>
     {!rows.length && <p className="dim">No songs match your search.</p>}</div>;
 }
 

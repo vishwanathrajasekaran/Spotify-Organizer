@@ -4,7 +4,9 @@ const ACCOUNTS = "https://accounts.spotify.com", API = "https://api.spotify.com/
 // Minimum scopes: read Liked Songs, list own playlists, edit own private playlists, upload playlist covers.
 export const SCOPES = "user-library-read playlist-read-private playlist-modify-private ugc-image-upload";
 export const MARKER = "Managed by VR Spotify Organizer";
-export const redirectUri = () => `${location.origin}/callback`;
+// BASE is "/spotify-organizer/" (set in vite.config.ts), so the redirect URI is <origin>/spotify-organizer/callback
+export const BASE = import.meta.env.BASE_URL;
+export const redirectUri = () => `${location.origin}${BASE}callback`;
 
 interface Tokens { access: string; refresh?: string; expiresAt: number }
 const readTokens = (): Tokens | null => { try { return JSON.parse(sessionStorage.getItem("vr-tokens") ?? "null"); } catch { return null; } };

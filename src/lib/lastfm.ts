@@ -1,7 +1,7 @@
 import { load, save } from "./storage";
 
 export type Entry = { playcount: number; listeners: number; tags: string[] } | null;
-const BASE = "/lastfm/2.0";   // proxied to https://ws.audioscrobbler.com/2.0/ (see vite.config.ts and vercel.json)
+const BASE = `${import.meta.env.BASE_URL}lastfm/2.0`;   // proxied to https://ws.audioscrobbler.com/2.0/ (see vite.config.ts and vercel.json)
 const cache: Record<string, Entry> = load("vr-lastfm", {});
 const persist = () => save("vr-lastfm", cache);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

@@ -1,7 +1,24 @@
 {
   "rewrites": [
-    { "source": "/spotify-organizer/lastfm/2.0", "destination": "https://ws.audioscrobbler.com/2.0/" },
-    { "source": "/spotify-organizer/assets/:path*", "destination": "/assets/:path*" },
-    { "source": "/spotify-organizer/:path*", "destination": "/index.html" }
+    {
+      "source": "/spotify-organizer/lastfm/2.0",
+      "destination": "https://ws.audioscrobbler.com/2.0/"
+    },
+    {
+      "source": "/spotify-organizer/assets/:path*",
+      "destination": "/assets/:path*"
+    },
+    {
+      "source": "/spotify-organizer",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/spotify-organizer/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/spotify-organizer/:path*",
+      "destination": "/index.html"
+    }
   ]
 }

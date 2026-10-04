@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { addedDecade, buildPlan, cleanOptions, releaseDecade, type Group, type Options as Opts, type Track } from "./lib/ranking";
 import { clearAll, getCfg, load, save, saveCfg, type Cfg } from "./lib/storage";
-import { clearTokens, finishLogin, getMe, hasTokens, redirectUri, startLogin } from "./lib/spotify";
+import { BASE, clearTokens, finishLogin, getMe, hasTokens, redirectUri, startLogin } from "./lib/spotify";
 import { searchTracks, validateKey } from "./lib/lastfm";
 import { analyze as analyzeLib, applyPlan, computeDiff, fixMatch, insights as makeInsights, type ApplyJob, type Ins, type Step } from "./lib/engine";
 import { makeCover } from "./lib/cover";
@@ -146,15 +146,15 @@ export default function App() {
       try {
         const c = getCfg();
         if (c) {
-          if (location.pathname === "/callback") {
+          if (location.pathname.replace(/\/$/, "") === `${BASE}callback`) {
             const p = new URLSearchParams(location.search);
             if (p.get("error")) throw new Error(`Spotify login was cancelled or failed: ${p.get("error")}`);
             await finishLogin(c.clientId, p.get("code") ?? "", p.get("state") ?? "");
-            history.replaceState({}, "", "/");
+            history.replaceState({}, "", BASE);
           }
           if (hasTokens()) { const u = await getMe(c.clientId); setMe({ id: u.id, name: u.display_name || u.id }); }
         }
-      } catch (e: any) { setError(e.message); clearTokens(); history.replaceState({}, "", "/"); }
+      } catch (e: any) { setError(e.message); clearTokens(); history.replaceState({}, "", BASE); }
       setBooting(false);
     })();
     document.fonts?.load("800 40px Nunito").then(() => setFontTick(1)).catch(() => {});

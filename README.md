@@ -28,7 +28,7 @@ Also install [Node.js 18 or newer](https://nodejs.org) if you want to run it on 
    npm install
    npm run dev
    ```
-3. Open **http://127.0.0.1:5173** (use `127.0.0.1`, not `localhost`).
+3. Open **http://127.0.0.1:5173/spotify-organizer/** (use `127.0.0.1`, not `localhost`).
 4. Create your keys (see Step 4 for the Spotify app and Step 5 for Last.fm), then paste them on the setup screen.
 
 ## Step 2: Put the code on GitHub
@@ -61,8 +61,8 @@ The repository contains no secrets, so it is safe to make it public.
 1. Go to https://developer.spotify.com/dashboard and click **Create app**.
 2. Enter a name and description, choose **Web API**, and accept the terms.
 3. Under **Redirect URIs**, add **both** of these and click **Add** and **Save**:
-   - `http://127.0.0.1:5173/callback` (for running on your computer)
-   - `https://YOUR-SITE.vercel.app/callback` (your Vercel address plus `/callback`)
+   - `http://127.0.0.1:5173/spotify-organizer/callback` (for running on your computer)
+   - `https://YOUR-SITE.vercel.app/spotify-organizer/callback` (your Vercel address plus `/spotify-organizer/callback`; for the hosted copy this is `https://tools.vishwanathrajasekaran.in/spotify-organizer/callback`)
 4. Open **Settings** and copy the **Client ID**. You do not need the client secret.
 5. If you will log in with a different Spotify account than the app owner, add that account under **User Management**.
 
@@ -81,20 +81,20 @@ The repository contains no secrets, so it is safe to make it public.
 Change the files on GitHub (or push with git). Vercel redeploys automatically.
 
 ## Sharing it
-Send people your Vercel address. Each person creates their own Spotify app and Last.fm key, and adds `https://YOUR-SITE.vercel.app/callback` to their own Spotify app's redirect URIs.
+Send people your Vercel address. Each person creates their own Spotify app and Last.fm key, and adds `https://YOUR-SITE/spotify-organizer/callback` to their own Spotify app's redirect URIs.
 
 ---
 
 ## Troubleshooting
 | Problem | Fix |
 |---|---|
-| "INVALID_CLIENT: Invalid redirect URI" | The redirect URI in your Spotify app must match the address bar exactly, including `https://` and `/callback`. |
-| Spotify shows an error on `localhost` | Use `http://127.0.0.1:5173`, not `localhost`. |
+| "INVALID_CLIENT: Invalid redirect URI" | The redirect URI in your Spotify app must match the address bar exactly, including `https://` and `/spotify-organizer/callback`. |
+| Spotify shows an error on `localhost` | Use `http://127.0.0.1:5173/spotify-organizer/`, not `localhost`. |
 | 403 from Spotify | The Spotify app owner needs Premium, and your account must be in **User Management**. |
 | "Could not reach Last.fm through the /lastfm proxy" | Make sure `vercel.json` was uploaded to the root of the repository, then redeploy. When running locally, use `npm run dev`. |
 | A playlist shows "already exists that this app didn't create" | Rename that playlist in Spotify, or type a different name in the name box here. |
 | Cover art not uploaded | Disconnect and connect again so Spotify can ask for the image-upload permission. |
-| Page shows a blank screen on `/callback` after a redeploy | Open the site's main address and connect again. |
+| Page shows a blank screen on `/spotify-organizer/callback` after a redeploy | Open the site's main address and connect again. |
 
 ## Privacy and safety
 - Your keys are held in your browser only: this tab by default, or this device if you tick **Remember my keys**. **Disconnect and clear keys** removes them.
@@ -105,3 +105,7 @@ Send people your Vercel address. Each person creates their own Spotify app and L
 ## Notes
 - If you rename a playlist after it was created, the next update creates a new playlist under the new name and lists the old one as left unchanged. Delete the old one in Spotify.
 - Automatic scheduled refresh is not available in this version because a static site cannot run while your browser is closed.
+
+## Hosting path
+
+The app is built to be served under `/spotify-organizer/` (see `base` in `vite.config.ts`). To host it at the root of its own domain, change `base` to `"/"`, and register `https://YOUR-SITE/callback` instead.
